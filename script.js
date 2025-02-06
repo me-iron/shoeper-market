@@ -3,15 +3,25 @@ const supabaseUrl = 'https://mjzlbvcokyvffmjcfzzr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qemxidmNva3l2ZmZtamNmenpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg4Mjk0OTQsImV4cCI6MjA1NDQwNTQ5NH0.-Wg4BuGmKEzYtg9PSfvuaDk5Q8vvKBfiSgv0hpChHws'
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
 
+// 기본 이미지 URL 상수 추가
+const DEFAULT_IMAGE_URL = 'https://placehold.co/400x300/e2e8f0/1e293b?text=No+Image';
+
 // 로컬 스토리지에서 상품 데이터 가져오기
 async function getProducts(page) {
     const { data, error } = await supabaseClient
         .from('products')
-        .select('*')
-        .select('id, title, price, seller, match_time, created_at, images[0]')
+        .select(`
+            id,
+            title,
+            price,
+            seller,
+            match_time,
+            created_at,
+            images
+        `)
         .order('created_at', { ascending: false })
         .limit(20)
-        .offset(page * 20)
+        .range(page * 20, (page + 1) * 20 - 1)
     
     if (error) {
         console.error('Error fetching products:', error)
@@ -86,7 +96,7 @@ if (window.location.pathname.endsWith('index.html') || window.location.pathname 
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                <img src="${product.images[0]}" alt="${product.title}">
+                <img src="${product.images?.[0] || DEFAULT_IMAGE_URL}" alt="${product.title}">
                 <h3>${product.title}</h3>
                 <p>${product.price.toLocaleString()}원</p>
                 <p>판매자: ${product.seller}</p>
@@ -114,6 +124,8 @@ if (window.location.pathname.endsWith('index.html') || window.location.pathname 
 // 판매글 작성 폼 처리
 if (window.location.pathname.endsWith('post.html')) {
     const form = document.getElementById('post-form');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
     
     // URL이 수정 모드인지 확인
     const isEditMode = new URLSearchParams(window.location.search).get('edit') === 'true';
@@ -189,6 +201,49 @@ if (window.location.pathname.endsWith('post.html')) {
         return null;
     }
     
+    // 이미지 미리보기 함수
+    function handleImagePreview(files) {
+        imagePreview.innerHTML = '';
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview">
+                    <button type="button" class="remove-image" onclick="this.parentElement.remove()">×</button>
+                `;
+                imagePreview.appendChild(div);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    // 이미지 선택 이벤트
+    imageInput.addEventListener('change', (e) => {
+        handleImagePreview(e.target.files);
+    });
+    
+    // 드래그 앤 드롭 이벤트
+    const dropZone = document.getElementById('dropZone');
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        imageInput.files = files;
+        handleImagePreview(files);
+    });
+    
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -258,6 +313,7 @@ if (window.location.pathname.endsWith('post.html')) {
             match_location: formData.get('match_location'),
             match_time: formData.get('match_time'),
             password: formData.get('password'),
+            match_url: null  // 또는 빈 문자열 ''
         };
         
         if (isEditMode) {
@@ -295,6 +351,8 @@ if (window.location.pathname.endsWith('post.html')) {
             // 새 게시물 작성
             try {
                 const imageUrls = await uploadImages(imageFiles);
+                console.log('Image URLs:', imageUrls);
+                console.log('Product data:', { ...product, images: imageUrls });
                 await saveProduct({ ...product, images: imageUrls });
                 window.location.href = 'index.html';
             } catch (error) {
@@ -325,7 +383,7 @@ if (window.location.pathname.endsWith('detail.html')) {
             const detailContainer = document.querySelector('.product-detail');
             detailContainer.innerHTML = `
                 <div class="product-images">
-                    ${product.images.map(img => `<img src="${img}" alt="${product.title}">`).join('')}
+                    ${(product.images || []).map(img => `<img src="${img || DEFAULT_IMAGE_URL}" alt="${product.title}">`).join('')}
                 </div>
                 <div class="product-info">
                     <h2>${product.title}</h2>
