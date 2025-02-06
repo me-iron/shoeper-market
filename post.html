@@ -7,39 +7,45 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <h1>판매글 작성</h1>
-        <a href="index.html">돌아가기</a>
-    </header>
+    <div class="container">
+        <header>
+            <h1>판매글 작성</h1>
+            <p>풋살화 신고 뛰어 보고 구매하세요</p>
+        </header>
 
-    <main>
-        <form id="post-form">
-            <input type="text" name="title" placeholder="제목" required>
-            <input type="number" name="price" placeholder="가격" required>
-            <input type="text" name="seller" placeholder="판매자 이름" required>
-            <div class="form-group">
-                <label for="match_location">매치 장소</label>
-                <input type="text" name="match_location" required>
-            </div>
-            <div class="form-group">
-                <label for="match_time">매치 시간</label>
-                <input type="datetime-local" name="match_time" required>
-            </div>
-            <input type="password" name="password" placeholder="게시글 비밀번호 (수정/삭제용)" required>
-            <textarea name="content" placeholder="상세 설명" required></textarea>
-            <div class="image-upload-container">
-                <div class="image-upload-area" id="dropZone">
-                    <input type="file" name="images" accept="image/*" multiple required id="imageInput">
-                    <div class="upload-text">
-                        <p>이미지를 드래그하거나 클릭하여 업로드</p>
-                        <p class="sub-text">최대 5개, 각 5MB 이하</p>
-                    </div>
+        <main>
+            <form id="post-form">
+                <input type="text" name="title" placeholder="제목" required>
+                <input type="number" name="price" placeholder="가격" required>
+                <input type="text" name="seller" placeholder="판매자 이름" required>
+                <div class="form-group">
+                    <label for="match_location">매치 장소</label>
+                    <input type="text" name="match_location" required>
                 </div>
-                <div class="image-preview" id="imagePreview"></div>
-            </div>
-            <button type="submit">등록하기</button>
-        </form>
-    </main>
+                <div class="form-group">
+                    <label for="match_time">매치 시간</label>
+                    <input type="datetime-local" name="match_time" required>
+                </div>
+                <input type="password" name="password" placeholder="게시글 비밀번호 (수정/삭제용)" required>
+                <textarea name="content" placeholder="상세 설명" required></textarea>
+                <div class="image-upload-container">
+                    <div class="image-upload-area" id="dropZone">
+                        <input type="file" name="images" accept="image/*" multiple required id="imageInput">
+                        <div class="upload-text">
+                            <p>이미지를 드래그하거나 클릭하여 업로드</p>
+                            <p class="sub-text">최대 5개, 각 5MB 이하</p>
+                        </div>
+                    </div>
+                    <div class="image-preview" id="imagePreview"></div>
+                </div>
+                <button type="submit">등록하기</button>
+            </form>
+        </main>
+
+        <div style="text-align: center; margin-top: 3rem;">
+            <a href="index.html" class="post-btn">돌아가기</a>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
