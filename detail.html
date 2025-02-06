@@ -14,8 +14,19 @@
 
     <main class="product-detail">
         <!-- 상품 정보가 동적으로 추가됨 -->
+        <div class="match-details">
+            <p><strong>장소:</strong> ${product.match_location}</p>
+            <p><strong>시간:</strong> ${new Date(product.match_time).toLocaleString()}</p>
+        </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const script = document.createElement('script');
+            script.src = 'script.js';
+            document.body.appendChild(script);
+        });
+    </script>
 </body>
 </html> 

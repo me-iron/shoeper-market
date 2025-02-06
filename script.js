@@ -1,62 +1,150 @@
+// Supabase 클라이언트 초기화
+const supabaseUrl = 'https://mjzlbvcokyvffmjcfzzr.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qemxidmNva3l2ZmZtamNmenpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg4Mjk0OTQsImV4cCI6MjA1NDQwNTQ5NH0.-Wg4BuGmKEzYtg9PSfvuaDk5Q8vvKBfiSgv0hpChHws'
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+
 // 로컬 스토리지에서 상품 데이터 가져오기
-function getProducts() {
-    return JSON.parse(localStorage.getItem('products')) || [];
+async function getProducts(page) {
+    const { data, error } = await supabaseClient
+        .from('products')
+        .select('*')
+        .select('id, title, price, seller, match_time, created_at, images[0]')
+        .order('created_at', { ascending: false })
+        .limit(20)
+        .offset(page * 20)
+    
+    if (error) {
+        console.error('Error fetching products:', error)
+        return []
+    }
+    return data
 }
 
 // 상품 데이터 저장하기
-function saveProduct(product) {
-    const products = getProducts();
-    products.push({
-        id: Date.now(),
-        ...product,
-        date: new Date().toISOString()
-    });
-    localStorage.setItem('products', JSON.stringify(products));
+async function saveProduct(product) {
+    const { data, error } = await supabaseClient
+        .from('products')
+        .insert([{
+            ...product,
+            created_at: new Date().toISOString()
+        }])
+        .select()
+    
+    if (error) {
+        console.error('Error saving product:', error)
+        throw error
+    }
+    return data[0]
+}
+
+// 날짜 포맷팅 함수
+function formatDateTime(dateTimeStr) {
+    const dt = new Date(dateTimeStr);
+    const now = new Date();
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    
+    return dt.toLocaleString('ko-KR', options);
+}
+
+// 상대적 시간 표시 함수 (예: "3일 전", "방금 전")
+function getRelativeTimeString(dateTimeStr) {
+    const dt = new Date(dateTimeStr);
+    const now = new Date();
+    const diffTime = Math.abs(now - dt);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+    if (diffDays > 0) return `${diffDays}일 전`;
+    if (diffHours > 0) return `${diffHours}시간 전`;
+    if (diffMinutes > 0) return `${diffMinutes}분 전`;
+    return '방금 전';
 }
 
 // 메인 페이지 상품 목록 표시
 if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
     const productGrid = document.querySelector('.product-grid');
-    const products = getProducts();
+    let page = 0;
+    let loading = false;
+    let hasMore = true;
     
-    products.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-            <img src="${product.images[0]}" alt="${product.title}">
-            <h3>${product.title}</h3>
-            <p>${product.price}원</p>
-            <p>판매자: ${product.seller}</p>
-            <button onclick="location.href='detail.html?id=${product.id}'">자세히 보기</button>
-        `;
-        productGrid.appendChild(card);
+    async function loadProducts() {
+        if (loading || !hasMore) return;
+        loading = true;
+        
+        const products = await getProducts(page);
+        if (products.length < 20) hasMore = false;
+        
+        products.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <img src="${product.images[0]}" alt="${product.title}">
+                <h3>${product.title}</h3>
+                <p>${product.price.toLocaleString()}원</p>
+                <p>판매자: ${product.seller}</p>
+                <p class="match-time">${formatDateTime(product.match_time)}</p>
+                <p class="created-time">${getRelativeTimeString(product.created_at)}</p>
+                <button onclick="location.href='detail.html?id=${product.id}'">자세히 보기</button>
+            `;
+            productGrid.appendChild(card);
+        });
+        
+        page++;
+        loading = false;
+    }
+    
+    // 무한 스크롤 구현
+    window.addEventListener('scroll', () => {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
+            loadProducts();
+        }
     });
+    
+    loadProducts().catch(console.error);
 }
 
 // 판매글 작성 폼 처리
 if (window.location.pathname.endsWith('post.html')) {
     const form = document.getElementById('post-form');
-    const matchUrlInput = form.querySelector('input[name="matchUrl"]');
-    const matchInfoDiv = document.getElementById('match-info');
     
     // URL이 수정 모드인지 확인
     const isEditMode = new URLSearchParams(window.location.search).get('edit') === 'true';
     
     // 수정 모드일 경우 기존 데이터 불러오기
     if (isEditMode) {
-        const editProduct = JSON.parse(localStorage.getItem('editProduct'));
+        const editProduct = JSON.parse(sessionStorage.getItem('editProduct'));
         if (editProduct) {
             // 폼에 기존 데이터 채우기
             form.querySelector('input[name="title"]').value = editProduct.title;
             form.querySelector('input[name="price"]').value = editProduct.price;
             form.querySelector('input[name="seller"]').value = editProduct.seller;
-            form.querySelector('input[name="matchUrl"]').value = editProduct.matchUrl;
+            form.querySelector('input[name="match_location"]').value = editProduct.match_location;
+            form.querySelector('input[name="match_time"]').value = editProduct.match_time;
             form.querySelector('textarea[name="content"]').value = editProduct.content;
             form.querySelector('input[name="password"]').value = editProduct.password;
             
-            // 이미지 입력 필드를 숨기고 required 속성 제거
-            form.querySelector('input[name="images"]').style.display = 'none';
+            // 이미지 입력 필드의 required 속성만 제거
             form.querySelector('input[name="images"]').required = false;
+            
+            // 현재 이미지 미리보기 추가
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'image-preview';
+            previewDiv.innerHTML = `
+                <p>현재 이미지:</p>
+                <div class="preview-images">
+                    ${(editProduct.images || []).map(img => `<img src="${img}" alt="현재 이미지">`).join('')}
+                </div>
+                <p>새 이미지를 선택하지 않으면 현재 이미지가 유지됩니다.</p>
+            `;
+            form.querySelector('input[name="images"]').parentNode.insertBefore(previewDiv, form.querySelector('input[name="images"]'));
             
             // 제목 변경
             document.querySelector('h1').textContent = '판매글 수정';
@@ -65,26 +153,65 @@ if (window.location.pathname.endsWith('post.html')) {
         }
     }
     
-    // URL 입력 시 매치 정보 가져오기
-    matchUrlInput.addEventListener('change', async () => {
-        const url = matchUrlInput.value;
-        if (url.includes('plabfootball.com/match/')) {
-            // 실제로는 API나 크롤링으로 데이터를 가져와야 하지만,
-            // 예시로 하드코딩된 데이터를 사용
-            matchInfoDiv.innerHTML = `
-                <div class="match-details">
-                    <p><strong>장소:</strong> 플랩 스타디움 가산 코오롱테크노밸리 1구장(블랙)</p>
-                    <p><strong>시간:</strong> 2월 8일 토요일 09:00</p>
-                </div>
-            `;
+    // 유효성 검사 함수들
+    function validatePrice(price) {
+        const minPrice = 1000;
+        const maxPrice = 1000000;
+        const numPrice = parseInt(price);
+        
+        if (isNaN(numPrice)) return '가격은 숫자만 입력 가능합니다.';
+        if (numPrice < minPrice) return `최소 가격은 ${minPrice.toLocaleString()}원입니다.`;
+        if (numPrice > maxPrice) return `최대 가격은 ${maxPrice.toLocaleString()}원입니다.`;
+        return null;
+    }
+    
+    function validateMatchTime(dateTimeStr) {
+        const matchTime = new Date(dateTimeStr);
+        const now = new Date();
+        const maxDate = new Date();
+        maxDate.setMonth(maxDate.getMonth() + 3); // 3개월 이내
+        
+        if (matchTime < now) return '과거 시간은 선택할 수 없습니다.';
+        if (matchTime > maxDate) return '3개월 이내의 매치만 등록 가능합니다.';
+        return null;
+    }
+    
+    function validateImages(files) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const maxCount = 5;
+        
+        if (files.length > maxCount) return `이미지는 최대 ${maxCount}개까지 업로드 가능합니다.`;
+        
+        for (const file of files) {
+            if (file.size > maxSize) return '이미지 크기는 5MB 이하여야 합니다.';
+            if (!file.type.startsWith('image/')) return '이미지 파일만 업로드 가능합니다.';
         }
-    });
-
+        return null;
+    }
+    
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const formData = new FormData(form);
         const isEditMode = new URLSearchParams(window.location.search).get('edit') === 'true';
+        
+        // 이미지 파일 검증
+        const imageInput = form.querySelector('input[name="images"]');
+        const imageFiles = imageInput ? imageInput.files : [];
+        
+        // 가격 유효성 검사
+        const priceError = validatePrice(formData.get('price'));
+        if (priceError) {
+            alert(priceError);
+            return;
+        }
+        
+        // 매치 시간 유효성 검사
+        const timeError = validateMatchTime(formData.get('match_time'));
+        if (timeError) {
+            alert(timeError);
+            return;
+        }
         
         // 필수 입력값 검증
         const requiredFields = {
@@ -92,22 +219,30 @@ if (window.location.pathname.endsWith('post.html')) {
             price: '가격',
             seller: '판매자 이름',
             content: '상세 설명',
-            matchUrl: '플랩풋볼 소셜 매치 URL'
+            match_location: '매치 장소',
+            match_time: '매치 시간'
         };
         
         const missingFields = [];
         
         for (const [field, label] of Object.entries(requiredFields)) {
             const value = formData.get(field);
-            if (!value || value.trim() === '') {
+            if (!value || (typeof value === 'string' && value.trim() === '')) {
                 missingFields.push(label);
             }
         }
         
         // 새 게시물일 때만 이미지 검증
-        const imageFiles = formData.getAll('images');
-        if (!isEditMode && (imageFiles.length === 0 || !imageFiles[0].size)) {
-            missingFields.push('상품 이미지');
+        if (!isEditMode) {
+            if (!imageInput || !imageFiles || imageFiles.length === 0) {
+                missingFields.push('상품 이미지');
+            } else {
+                const imageError = validateImages(imageFiles);
+                if (imageError) {
+                    alert(imageError);
+                    return;
+                }
+            }
         }
         
         if (missingFields.length > 0) {
@@ -120,105 +255,219 @@ if (window.location.pathname.endsWith('post.html')) {
             price: parseInt(formData.get('price')),
             seller: formData.get('seller'),
             content: formData.get('content'),
-            matchUrl: formData.get('matchUrl'),
+            match_location: formData.get('match_location'),
+            match_time: formData.get('match_time'),
             password: formData.get('password'),
         };
         
         if (isEditMode) {
-            // 수정 모드일 때는 기존 데이터 업데이트
-            const editProduct = JSON.parse(localStorage.getItem('editProduct'));
-            const products = getProducts();
-            const updatedProducts = products.map(p => {
-                if (p.id === editProduct.id) {
-                    return {
-                        ...p,
-                        ...product,
-                        images: p.images  // 기존 이미지 유지
-                    };
+            // 수정 모드일 때는 Supabase 데이터 업데이트
+            const editProduct = JSON.parse(sessionStorage.getItem('editProduct'));
+            
+            // 새 이미지가 선택되었는지 확인
+            let updatedImages = editProduct.images || [];
+            if (imageFiles.length > 0) {
+                try {
+                    updatedImages = await uploadImages(imageFiles);
+                } catch (error) {
+                    console.error('Error uploading images:', error);
+                    alert('이미지 업로드에 실패했습니다.');
+                    return;
                 }
-                return p;
-            });
-            localStorage.setItem('products', JSON.stringify(updatedProducts));
-            localStorage.removeItem('editProduct');  // 임시 저장 데이터 삭제
+            }
+            
+            const { error: updateError } = await supabaseClient
+                .from('products')
+                .update({
+                    ...product,
+                    images: updatedImages
+                })
+                .eq('id', editProduct.id);
+            
+            if (updateError) {
+                console.error('Error updating product:', updateError);
+                alert('게시물 수정에 실패했습니다.');
+                return;
+            }
+            sessionStorage.removeItem('editProduct');  // 임시 저장 데이터 삭제
+            window.location.href = 'index.html';  // 성공 시 목록으로 이동
         } else {
             // 새 게시물 작성
-            const images = await Promise.all(
-                [...imageFiles].map(file => {
-                    return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(file);
-                    });
-                })
-            );
-            saveProduct({ ...product, images });
+            try {
+                const imageUrls = await uploadImages(imageFiles);
+                await saveProduct({ ...product, images: imageUrls });
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Error saving product:', error);
+                alert('게시물 등록에 실패했습니다.');
+            }
         }
-        window.location.href = 'index.html';
     });
 }
 
 // 상세 페이지 표시
 if (window.location.pathname.endsWith('detail.html')) {
     const productId = new URLSearchParams(window.location.search).get('id');
-    const products = getProducts();
-    const product = products.find(p => p.id === parseInt(productId));
     
-    if (product) {
-        const detailContainer = document.querySelector('.product-detail');
-        detailContainer.innerHTML = `
-            <div class="product-images">
-                ${product.images.map(img => `<img src="${img}" alt="${product.title}">`).join('')}
-            </div>
-            <div class="product-info">
-                <h2>${product.title}</h2>
-                <p class="price">${product.price}원</p>
-                <p class="seller">판매자: ${product.seller}</p>
-                <div class="match-details">
-                    <p><strong>장소:</strong> 플랩 스타디움 가산 코오롱테크노밸리 1구장(블랙)</p>
-                    <p><strong>시간:</strong> 2월 8일 토요일 09:00</p>
+    async function loadProduct() {
+        const { data: product, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('id', parseInt(productId))
+            .single();
+        
+        if (error) {
+            console.error('Error fetching product:', error);
+            return;
+        }
+        
+        if (product) {
+            const detailContainer = document.querySelector('.product-detail');
+            detailContainer.innerHTML = `
+                <div class="product-images">
+                    ${product.images.map(img => `<img src="${img}" alt="${product.title}">`).join('')}
                 </div>
-                <p class="description">${product.content}</p>
-                <div class="button-group">
-                    ${product.matchUrl ? 
-                        `<button class="match-btn" onclick="window.open('${product.matchUrl}', '_blank')">실착 거래</button>` 
-                        : ''}
-                    <div class="admin-buttons">
-                        <button onclick="checkPasswordAndModify(${product.id})">수정</button>
-                        <button onclick="checkPasswordAndDelete(${product.id})" class="delete-btn">삭제</button>
+                <div class="product-info">
+                    <h2>${product.title}</h2>
+                    <p class="price">${product.price.toLocaleString()}원</p>
+                    <p class="seller">판매자: ${product.seller}</p>
+                    <div class="match-details">
+                        <p><strong>장소:</strong> ${product.match_location}</p>
+                        <p><strong>시간:</strong> ${formatDateTime(product.match_time)}</p>
+                    </div>
+                    <p class="description">${product.content}</p>
+                    <p class="created-at">작성일: ${formatDateTime(product.created_at)}</p>
+                    <div class="button-group">
+                        <div class="admin-buttons">
+                            <button onclick="checkPasswordAndModify(${product.id})">수정</button>
+                            <button onclick="checkPasswordAndDelete(${product.id})" class="delete-btn">삭제</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
+    
+    loadProduct().catch(console.error);
 }
 
 // 비밀번호 확인 및 수정/삭제 함수들
-function checkPasswordAndModify(productId) {
+async function checkPasswordAndModify(productId) {
     const password = prompt('Shoeper:\n게시글 수정을 위한 비밀번호를 입력하세요.');
-    const products = getProducts();
-    const product = products.find(p => p.id === productId);
+    const { data: product, error } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+    
+    if (error) {
+        console.error('Error fetching product:', error);
+        return;
+    }
     
     if (product && product.password === password) {
-        // 수정할 상품 정보를 로컬 스토리지에 임시 저장
-        localStorage.setItem('editProduct', JSON.stringify(product));
+        sessionStorage.setItem('editProduct', JSON.stringify(product));  // localStorage 대신 sessionStorage 사용
         window.location.href = 'post.html?edit=true';
-    } else if (password !== null) {  // 취소 버튼을 누르지 않은 경우에만 알림
+    } else if (password !== null) {
         alert('비밀번호가 일치하지 않습니다.');
     }
 }
 
-function checkPasswordAndDelete(productId) {
+async function checkPasswordAndDelete(productId) {
     const password = prompt('Shoeper:\n게시글 삭제를 위한 비밀번호를 입력하세요.');
-    const products = getProducts();
-    const product = products.find(p => p.id === productId);
+    const { data: product, error } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+    
+    if (error) {
+        console.error('Error fetching product:', error);
+        return;
+    }
     
     if (product && product.password === password) {
         if (confirm('정말 삭제하시겠습니까?')) {
-            const updatedProducts = products.filter(p => p.id !== productId);
-            localStorage.setItem('products', JSON.stringify(updatedProducts));
+            const { error: deleteError } = await supabaseClient
+                .from('products')
+                .delete()
+                .eq('id', productId);
+            
+            if (deleteError) {
+                console.error('Error deleting product:', deleteError);
+                return;
+            }
             window.location.href = 'index.html';
         }
-    } else if (password !== null) {  // 취소 버튼을 누르지 않은 경우에만 알림
+    } else if (password !== null) {
         alert('비밀번호가 일치하지 않습니다.');
     }
+}
+
+async function uploadImages(files) {
+    const uploadPromises = Array.from(files).map(async (file) => {
+        // 이미지 리사이징
+        const resizedImage = await resizeImage(file, {
+            maxWidth: 1200,
+            maxHeight: 1200,
+            quality: 0.8
+        });
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `product-images/${fileName}`;
+        
+        const { error: uploadError } = await supabaseClient
+            .storage
+            .from('products')
+            .upload(filePath, resizedImage);
+            
+        if (uploadError) {
+            throw uploadError;
+        }
+        
+        const { data: { publicUrl } } = supabaseClient
+            .storage
+            .from('products')
+            .getPublicUrl(filePath);
+            
+        return publicUrl;
+    });
+    
+    return Promise.all(uploadPromises);
+}
+
+async function resizeImage(file, options = {}) {
+    const { maxWidth = 1200, maxHeight = 1200, quality = 0.8 } = options;
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+            
+            if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/jpeg', quality);
+        };
+        
+        img.src = URL.createObjectURL(file);
+    });
 } 

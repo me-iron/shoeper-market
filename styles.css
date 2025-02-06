@@ -4,9 +4,21 @@
     box-sizing: border-box;
 }
 
+/* 기본 스타일 개선 */
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #45a049;
+    --error-color: #f44336;
+    --text-color: #333;
+    --border-color: #ddd;
+    --background-color: #f9f9f9;
+}
+
 body {
-    font-family: 'Noto Sans KR', sans-serif;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
     line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
     padding: 20px;
 }
 
@@ -48,19 +60,99 @@ form {
     margin: 0 auto;
 }
 
-form input,
-form textarea {
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 8px;
+/* 폼 스타일 개선 */
+.form-group {
+    margin-bottom: 1.5rem;
 }
 
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="datetime-local"],
+textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+/* 매치 정보 스타일 개선 */
+.match-details {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 1rem 0;
+}
+
+.match-details p {
+    margin: 0.5rem 0;
+}
+
+.match-details strong {
+    color: var(--primary-color);
+}
+
+/* 이미지 미리보기 스타일 개선 */
+.image-preview {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.preview-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.preview-images img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* 버튼 스타일 개선 */
 button {
-    background: #007bff;
+    background-color: var(--primary-color);
     color: white;
+    padding: 0.8rem 1.5rem;
     border: none;
-    padding: 10px 20px;
+    border-radius: 4px;
     cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: var(--secondary-color);
+}
+
+button.delete-btn {
+    background-color: var(--error-color);
+}
+
+button.delete-btn:hover {
+    background-color: #d32f2f;
 }
 
 .product-detail {
@@ -130,28 +222,129 @@ button {
     margin-top: 10px;
 }
 
-.delete-btn {
-    background: #dc3545;
+/* 반응형 디자인 개선 */
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .product-detail {
+        flex-direction: column;
+    }
+
+    .product-images {
+        width: 100%;
+    }
 }
 
-.delete-btn:hover {
-    background: #c82333;
+.match-time {
+    color: var(--primary-color);
+    font-weight: 500;
+    margin: 0.5rem 0;
 }
 
-.match-info {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 5px;
-    margin: 10px 0;
+.created-time {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
 }
 
-.match-details {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 5px;
-    margin: 10px 0;
+.created-at {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
 }
 
-.match-details p {
-    margin: 5px 0;
+/* 이미지 업로드 영역 스타일 */
+.image-upload-container {
+    margin: 1.5rem 0;
+}
+
+.image-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.image-upload-area:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.image-upload-area input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-text {
+    pointer-events: none;
+}
+
+.upload-text p {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.upload-text .sub-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+.image-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.preview-item {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.preview-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.preview-item .remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(244, 67, 54, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    padding: 0;
+}
+
+.preview-item .remove-image:hover {
+    background: var(--error-color);
+}
+
+/* 드래그 오버 상태 */
+.image-upload-area.dragover {
+    border-color: var(--primary-color);
+    background-color: rgba(76, 175, 80, 0.1);
 } 
