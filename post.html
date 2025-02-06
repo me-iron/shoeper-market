@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>판매글 작성 - Shoeper Market</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>판매글 작성</h1>
+        <a href="index.html">돌아가기</a>
+    </header>
+
+    <main>
+        <form id="post-form">
+            <input type="text" name="title" placeholder="제목" required>
+            <input type="number" name="price" placeholder="가격" required>
+            <input type="text" name="seller" placeholder="판매자 이름" required>
+            <input type="url" name="matchUrl" placeholder="플랩풋볼 소셜 매치 URL" required>
+            <div id="match-info" class="match-info">
+                <!-- 매치 정보가 여기에 표시됨 -->
+            </div>
+            <input type="password" name="password" placeholder="게시글 비밀번호 (수정/삭제용)" required>
+            <textarea name="content" placeholder="상세 설명" required></textarea>
+            <input type="file" name="images" accept="image/*" multiple required>
+            <button type="submit">등록하기</button>
+        </form>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html> 
