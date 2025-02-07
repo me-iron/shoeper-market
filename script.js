@@ -411,11 +411,31 @@ if (window.location.pathname.endsWith('detail.html')) {
                     </div>
                     <p class="description">${product.content}</p>
                     <p class="created-at">작성일: ${formatDateTime(product.created_at)}</p>
+                    <div class="interaction-section">
+                        <div class="like-button">
+                            <button id="likeBtn" class="like-btn">
+                                <span class="heart-icon">♡</span>
+                                <span id="likeCount">0</span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="button-group">
                         <div class="admin-buttons">
                             <button onclick="checkPasswordAndModify(${product.id})">수정</button>
                             <button onclick="checkPasswordAndDelete(${product.id})" class="delete-btn">삭제</button>
                         </div>
+                    </div>
+                </div>
+                <div class="comments-section">
+                    <h3>댓글</h3>
+                    <form id="comment-form">
+                        <input type="text" name="nickname" placeholder="닉네임" required>
+                        <textarea name="content" placeholder="댓글을 입력하세요" required></textarea>
+                        <input type="password" name="password" placeholder="비밀번호" required>
+                        <button type="submit">댓글 작성</button>
+                    </form>
+                    <div id="comments-list">
+                        <!-- 댓글들이 여기에 동적으로 추가됨 -->
                     </div>
                 </div>
             `;
@@ -439,6 +459,10 @@ if (window.location.pathname.endsWith('detail.html')) {
                     <p class="comment-content">${comment.content}</p>
                 </div>
             `).join('') || '';
+            
+            // DOM이 업데이트된 후에 이벤트 리스너 등록
+            document.getElementById('likeBtn').addEventListener('click', handleLike);
+            document.getElementById('comment-form').addEventListener('submit', handleCommentSubmit);
         }
     }
     
@@ -509,10 +533,6 @@ if (window.location.pathname.endsWith('detail.html')) {
         form.reset();
         loadProduct();
     }
-    
-    // 이벤트 리스너 등록
-    document.getElementById('likeBtn').addEventListener('click', handleLike);
-    document.getElementById('comment-form').addEventListener('submit', handleCommentSubmit);
     
     loadProduct().catch(console.error);
 }
