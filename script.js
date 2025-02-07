@@ -468,7 +468,6 @@ if (window.location.pathname.endsWith('detail.html')) {
     
     // 좋아요 버튼 이벤트 핸들러
     async function handleLike() {
-        const likeBtn = document.getElementById('likeBtn');
         const likeCount = document.getElementById('likeCount');
         const heartIcon = document.querySelector('.heart-icon');
         const storageKey = `liked_${productId}`;
@@ -478,9 +477,7 @@ if (window.location.pathname.endsWith('detail.html')) {
             // 좋아요 취소
             const { error } = await supabaseClient
                 .from('likes')
-                .update({ 
-                    count: 0  // 좋아요 취소 시 0으로 설정
-                })
+                .delete()
                 .eq('product_id', productId);
             
             if (!error) {
@@ -492,12 +489,10 @@ if (window.location.pathname.endsWith('detail.html')) {
             // 좋아요 추가
             const { error } = await supabaseClient
                 .from('likes')
-                .upsert({ 
-                    product_id: productId,
-                    count: 1  // 첫 좋아요는 1로 설정
-                }, {
-                    onConflict: 'product_id'
-                });
+                .insert([{ 
+                    product_id: parseInt(productId),
+                    count: 1
+                }]);
             
             if (!error) {
                 localStorage.setItem(storageKey, 'true');
@@ -514,7 +509,7 @@ if (window.location.pathname.endsWith('detail.html')) {
         const formData = new FormData(form);
         
         const comment = {
-            product_id: productId,
+            product_id: parseInt(productId),
             nickname: formData.get('nickname'),
             content: formData.get('content'),
             password: formData.get('password')
