@@ -478,26 +478,29 @@ if (window.location.pathname.endsWith('detail.html')) {
             const { error } = await supabaseClient
                 .from('likes')
                 .delete()
-                .eq('product_id', productId);
+                .eq('product_id', parseInt(productId));
             
             if (!error) {
                 localStorage.removeItem(storageKey);
                 heartIcon.textContent = '♡';
-                likeCount.textContent = '0';
+                likeCount.textContent = parseInt(likeCount.textContent) - 1;
             }
         } else {
             // 좋아요 추가
+            const currentCount = parseInt(likeCount.textContent) || 0;
             const { error } = await supabaseClient
                 .from('likes')
-                .insert([{ 
+                .upsert([{ 
                     product_id: parseInt(productId),
-                    count: 1
-                }]);
+                    count: currentCount + 1
+                }], {
+                    onConflict: 'product_id'
+                });
             
             if (!error) {
                 localStorage.setItem(storageKey, 'true');
                 heartIcon.textContent = '♥';
-                likeCount.textContent = '1';
+                likeCount.textContent = currentCount + 1;
             }
         }
     }
