@@ -483,19 +483,17 @@ if (window.location.pathname.endsWith('detail.html')) {
             if (!error) {
                 localStorage.removeItem(storageKey);
                 heartIcon.textContent = '♡';
-                likeCount.textContent = parseInt(likeCount.textContent) - 1;
+                likeCount.textContent = Math.max(0, parseInt(likeCount.textContent) - 1);
             }
         } else {
             // 좋아요 추가
-            const currentCount = parseInt(likeCount.textContent) || 0;
+            const currentCount = Math.max(0, parseInt(likeCount.textContent) || 0);
             const { error } = await supabaseClient
                 .from('likes')
-                .upsert([{ 
+                .insert([{ 
                     product_id: parseInt(productId),
                     count: currentCount + 1
-                }], {
-                    onConflict: 'product_id'
-                });
+                }]);
             
             if (!error) {
                 localStorage.setItem(storageKey, 'true');
