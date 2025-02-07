@@ -524,9 +524,24 @@ if (window.location.pathname.endsWith('detail.html')) {
             return;
         }
         
-        // 폼 초기화 및 댓글 목록 새로고침
+        // 댓글 목록만 새로고침
         form.reset();
-        loadProduct();
+        const { data: comments } = await supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('product_id', productId)
+            .order('created_at', { ascending: false });
+        
+        const commentsList = document.getElementById('comments-list');
+        commentsList.innerHTML = comments?.map(comment => `
+            <div class="comment">
+                <div class="comment-header">
+                    <span class="nickname">${comment.nickname}</span>
+                    <span class="created-at">${getRelativeTimeString(comment.created_at)}</span>
+                </div>
+                <p class="comment-content">${comment.content}</p>
+            </div>
+        `).join('') || '';
     }
     
     loadProduct().catch(console.error);
