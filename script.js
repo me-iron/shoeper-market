@@ -366,6 +366,7 @@ if (window.location.pathname.endsWith('post.html')) {
 // 상세 페이지 표시
 if (window.location.pathname.endsWith('detail.html')) {
     const productId = new URLSearchParams(window.location.search).get('id');
+    let likeData; // 전역 변수로 선언
     
     async function loadProduct() {
         const { data: product, error } = await supabaseClient
@@ -378,6 +379,21 @@ if (window.location.pathname.endsWith('detail.html')) {
             console.error('Error fetching product:', error);
             return;
         }
+        
+        // 좋아요 수 가져오기
+        const { data: likes } = await supabaseClient
+            .from('likes')
+            .select('count')
+            .eq('product_id', productId)
+            .single();
+        likeData = likes;
+        
+        // 댓글 가져오기
+        const { data: comments } = await supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('product_id', productId)
+            .order('created_at', { ascending: false });
         
         if (product) {
             const detailContainer = document.querySelector('.product-detail');
@@ -403,8 +419,100 @@ if (window.location.pathname.endsWith('detail.html')) {
                     </div>
                 </div>
             `;
+            
+            // 좋아요 버튼 상태 설정
+            const likeCount = document.getElementById('likeCount');
+            const heartIcon = document.querySelector('.heart-icon');
+            const isLiked = localStorage.getItem(`liked_${productId}`);
+            
+            likeCount.textContent = likeData?.count || 0;
+            heartIcon.textContent = isLiked ? '♥' : '♡';
+            
+            // 댓글 목록 표시
+            const commentsList = document.getElementById('comments-list');
+            commentsList.innerHTML = comments?.map(comment => `
+                <div class="comment">
+                    <div class="comment-header">
+                        <span class="nickname">${comment.nickname}</span>
+                        <span class="created-at">${getRelativeTimeString(comment.created_at)}</span>
+                    </div>
+                    <p class="comment-content">${comment.content}</p>
+                </div>
+            `).join('') || '';
         }
     }
+    
+    // 좋아요 버튼 이벤트 핸들러
+    async function handleLike() {
+        const likeBtn = document.getElementById('likeBtn');
+        const likeCount = document.getElementById('likeCount');
+        const heartIcon = document.querySelector('.heart-icon');
+        const storageKey = `liked_${productId}`;
+        const isLiked = localStorage.getItem(storageKey);
+        
+        if (isLiked) {
+            // 좋아요 취소
+            const { error } = await supabaseClient
+                .from('likes')
+                .update({ 
+                    count: 0  // 좋아요 취소 시 0으로 설정
+                })
+                .eq('product_id', productId);
+            
+            if (!error) {
+                localStorage.removeItem(storageKey);
+                heartIcon.textContent = '♡';
+                likeCount.textContent = '0';
+            }
+        } else {
+            // 좋아요 추가
+            const { error } = await supabaseClient
+                .from('likes')
+                .upsert({ 
+                    product_id: productId,
+                    count: 1  // 첫 좋아요는 1로 설정
+                }, {
+                    onConflict: 'product_id'
+                });
+            
+            if (!error) {
+                localStorage.setItem(storageKey, 'true');
+                heartIcon.textContent = '♥';
+                likeCount.textContent = '1';
+            }
+        }
+    }
+    
+    // 댓글 폼 제출 핸들러
+    async function handleCommentSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        
+        const comment = {
+            product_id: productId,
+            nickname: formData.get('nickname'),
+            content: formData.get('content'),
+            password: formData.get('password')
+        };
+        
+        const { error } = await supabaseClient
+            .from('comments')
+            .insert([comment]);
+            
+        if (error) {
+            alert('댓글 작성에 실패했습니다.');
+            return;
+        }
+        
+        // 폼 초기화 및 댓글 목록 새로고침
+        form.reset();
+        loadProduct();
+    }
+    
+    // 이벤트 리스너 등록
+    document.getElementById('likeBtn').addEventListener('click', handleLike);
+    document.getElementById('comment-form').addEventListener('submit', handleCommentSubmit);
     
     loadProduct().catch(console.error);
 }

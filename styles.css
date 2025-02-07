@@ -369,4 +369,69 @@ button.delete-btn:hover {
 .image-upload-area.dragover {
     border-color: var(--primary-color);
     background-color: rgba(76, 175, 80, 0.1);
+}
+
+/* 좋아요 버튼 스타일 */
+.like-button {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.like-btn {
+    background: white;
+    border: 2px solid #ff4b4b;
+    color: #ff4b4b;
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.like-btn:hover {
+    background: #ff4b4b;
+    color: white;
+}
+
+.heart-icon {
+    margin-right: 0.5rem;
+}
+
+/* 댓글 섹션 스타일 */
+.comments-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.comments-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+#comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+#comment-form input,
+#comment-form textarea {
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+#comment-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+#comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 } 

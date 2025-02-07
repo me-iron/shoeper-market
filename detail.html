@@ -19,6 +19,27 @@
                 <p><strong>장소:</strong> ${product.match_location}</p>
                 <p><strong>시간:</strong> ${new Date(product.match_time).toLocaleString()}</p>
             </div>
+            <div class="interaction-section">
+                <div class="like-button">
+                    <button id="likeBtn" class="like-btn">
+                        <span class="heart-icon">♡</span>
+                        <span id="likeCount">0</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="comments-section">
+                <h3>댓글</h3>
+                <form id="comment-form">
+                    <input type="text" name="nickname" placeholder="닉네임" required>
+                    <textarea name="content" placeholder="댓글을 입력하세요" required></textarea>
+                    <input type="password" name="password" placeholder="비밀번호" required>
+                    <button type="submit">댓글 작성</button>
+                </form>
+                <div id="comments-list">
+                    <!-- 댓글들이 여기에 동적으로 추가됨 -->
+                </div>
+            </div>
         </main>
 
         <div style="text-align: center; margin-top: 3rem;">
