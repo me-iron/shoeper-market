@@ -434,4 +434,25 @@ button.delete-btn:hover {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+}
+
+/* 개발자 페이지 스타일 */
+.developer-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.developer-content section {
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.copyright {
+    margin-top: 1rem;
+    color: #666;
+    font-size: 0.9rem;
 } 
